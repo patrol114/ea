@@ -1,0 +1,8 @@
+authtoken: 2gIxUAtk9IpezQI7kgVfiOV75AD_3iuitbvYT4iN7Qxg6Sgxq
+tunnels:
+  aiohttp:
+    proto: https
+    addr: 8080
+    host_header: rewrite
+web_allow_hosts:
+  - cheaply-enormous-bunny.ngrok-free.app

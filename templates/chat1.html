@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YetiAI Chatbot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+            background-image: url('/static/logoyetii.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 650px;
+            height: 65vh;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid #000;
+            margin-bottom: 20px;
+        }
+
+        .chat-messages {
+            max-height: calc(100% - 70px);
+            overflow-y: auto;
+            margin: 5px 0;
+            background-color: #fff;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .chat-message {
+            margin: 5px;
+            padding: 10px;
+            border-radius: 10px;
+            position: relative;
+            font-size: 14px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background-color: #006400;
+            color: #fff;
+        }
+
+        .bot-message {
+            align-self: flex-start;
+            background-color: #b0e0e6;
+        }
+
+        .chat-input {
+            width: 98%;
+            padding: 12px 20px;
+            background-color: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.2);
+            border-top: 3px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            z-index: 999;
+        }
+
+        input[type="text"] {
+            flex-grow: 1;
+            margin-right: 15px;
+            padding: 14px 18px;
+            font-size: 18px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #2196f3;
+            border-radius: 12px;
+            color: #333;
+        }
+
+        button {
+            padding: 12px 25px;
+            background-color: #007BFF;
+            color: #ffffff;
+            font-size: 16px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .yeti-icon {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .yeti-icon img {
+            width: 150px;
+            height: auto;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            animation: yeti-bounce 2s infinite;
+        }
+
+        @keyframes yeti-bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="yeti-icon">
+            <img src="/static/yeti-icon.png" alt="Yeti Icon">
+        </div>
+        <div class="chat-messages" id="chat-messages"></div>
+    </div>
+    <div class="chat-input" id="chat-input">
+        <input type="text" id="user-message" placeholder="Zapytaj Yetiego o coś!">
+        <button onclick="sendMessage()">Wyślij</button>
+    </div>
+
+    <script>
+        const chatInput = document.getElementById('chat-input');
+        const userMessageInput = document.getElementById('user-message');
+        const chatMessages = document.getElementById('chat-messages');
+        const ws = new WebSocket('wss://' + window.location.host + '/ws');
+
+        ws.onmessage = function(event) {
+            appendMessage(event.data, 'bot-message');
+        };
+
+        ws.onopen = function() {
+            console.log('WebSocket connection established');
+        };
+
+        ws.onerror = function(error) {
+            console.error('WebSocket error:', error);
+        };
+
+        // Funkcja do szyfrowania danych
+        function encryptData(data) {
+            const key = CryptoJS.enc.Utf8.parse('yetipatrol114pyy');
+            const encrypted = CryptoJS.AES.encrypt(JSON.stringify(data), key, {
+                mode: CryptoJS.mode.ECB,
+                padding: CryptoJS.pad.Pkcs7
+            });
+            return encrypted.toString();
+        }
+
+        // Funkcja do wysyłania wiadomości
+        function sendMessage() {
+            const message = userMessageInput.value;
+            const instructions = {
+                language: "Odpowiedz w języku Polskim",
+                name: "Twoje imię to: Yeti",
+                ai: "`MistralAI` zaprojektował twoją podstawową strukturę, a `patrol114` wdrożył, rozbudował i udoskonalił twoje możliwości, w tym :)!"
+            };
+
+            if (message.trim()) {
+                appendMessage(message, 'user-message');
+                const encryptedData = encryptData({ 'message': message, 'instructions': instructions });
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(encryptedData);
+                } else {
+                    console.error('WebSocket is not open. Ready state is:', ws.readyState);
+                }
+                userMessageInput.value = '';
+            }
+        }
+
+        function appendMessage(message, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('chat-message', type);
+            const now = new Date().toLocaleTimeString();
+            messageDiv.innerHTML = `<span class="message-time">[${now}]</span>\n ${message}`;
+            chatMessages.appendChild(messageDiv);
+
+            setTimeout(() => {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 100);
+        }
+
+        userMessageInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
